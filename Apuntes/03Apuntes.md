@@ -469,3 +469,19 @@ const [state, setState]= useState<T>()
 
 //si le pongo number, Counter va aser de tipo number
 
+const [state, setState]= useState<number>()
+~~~
+
+## useRef
+
+~~~js
+const ref = useRef<string>() // solo me va a dejar pasarle strings
+
+//muchas veces se declara null para usarlo cuando se lo ibamos a pasar a un elemento
+
+const ref = useRef(null)
+
+//para solucionarlo le paso el elemento HTMLHeadElement al ser un h1
+//Si fuera un div sería HTMLDivElement
+
+const ref = useRef<HTMLHeadingElement>(null)
