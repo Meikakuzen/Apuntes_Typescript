@@ -32,9 +32,9 @@ const userId = getUserId<string>() // devuelve un objeto con id y case de tipo s
 
 ~~~js
 
-//Quiero que esto , cuando lo utilice infiera en el tipo, si le paso un array que saque su tipo
+//Quiero que esto , cuando lo utilice infiera en el tipo, si le paso un array de string que saque el tipo string
 
-type Flatten<T> = T extends Array<infer Item> ? Item: T //infiere sobre los items del array
+type Flatten<T> = T extends Array<infer Item> ? Item : T //infiere sobre los items del array ( es un ternario )
 
 type FlattenArray= Flatten<string[]> //me saca el tipo string del array
 
