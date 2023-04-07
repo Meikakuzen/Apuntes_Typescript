@@ -28,7 +28,7 @@ const teacher:Teacher ={
 }
 ~~~
 
-## Staisfies
+## Satisfies
 
 ~~~js
 type CourseId = string | number;
@@ -110,8 +110,8 @@ const foundValues = filterValues("Migue", ["Migue", "Perico", "Clara"]) as strin
 
 //pero hay otra mejor que es usar un genérico para expresar que puede ser de un tipo u otro
 
-function filterValues<T>(search: T, values: T[]):T[] //devuelve un array de genérico, en el ejemplo string
-{
+function filterValues<T>(search: T, values: T[]):T[]{  //devuelve un array de genérico, en el ejemplo string
+
     values.filter(value => value === search)
 }
 

@@ -76,7 +76,7 @@ const funcionNever = (message: string):never{
 - Por defecto undefined es asignable a una variable de tipo null
 
 ~~~ts
-null !== udefined // true
+null !== undefined // true
 
 let vacio:null = undefined; //no da error
 ~~~
