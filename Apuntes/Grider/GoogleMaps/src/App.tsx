@@ -1,10 +1,11 @@
-import '../Apuntes/01Apuntes.ts'
+import Mapa from './Mapa'
+import './index'
 
 function App() {
 
 
   return (
-    <p>Hello world</p>
+    <Mapa  />
   )
 }
 
