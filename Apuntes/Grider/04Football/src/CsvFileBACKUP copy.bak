@@ -1,0 +1,32 @@
+import fs from 'fs'
+
+
+
+
+class CsvFileReader{
+    
+    data: MatchData[] = []
+
+    constructor(public fileName: string){}
+
+    read(): void{
+        this.data = fs.readFileSync(this.fileName,{
+            encoding: 'utf8', // si espero texto lo codeo a utf-8
+            })
+            .split('\n')
+            .map((row: string): string[]=>{
+                return row.split(',')
+          }).map((row: string[]): MatchData=>{
+            return [
+                dateStringTodate(row[0]),
+                row[1],
+                row[2],
+                parseInt(row[3]),
+                parseInt(row[4]),
+                row[5] as MatchResult, //le digo a Typescript que se llo que ocurre aqui, CRÉEME
+                row[6]
+            ]
+          })
+    }
+
+}
