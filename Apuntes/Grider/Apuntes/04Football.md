@@ -820,3 +820,354 @@ console.log(`Manchester United won ${manUnitedWins} games`)
 
 ## Goal Moving Forward
 
+- Tengo una variable llamada manUnitedGames qeu utilizo como contador para sumar cuantos partidos gana el Man United
+- Si quisiera calcularlo con otro equipo sería incómodo
+- Vamos a arreglar este aspecto del código en el análisis de tipos en el bucle for
+- También falta habilitar el output en diferentes formatos
+- En este momento el output es un simple console.log
+- La solución pasa por composición
+- La idea es tener un objeto que referencia otro/s objeto/s
+- El objeto anfitrión delegará parte de su comportamiento al objeto alojado
+- El approach es el siguiente:
+  - La clase **Summary** tiene un campo **analyzer: Analyzer** (satisface la interfaz Analyzer)
+    - La **interfaz Analyzer** tiene un método **run(matches: MatchData[]): string**
+      - Este string que devuelve debo guardarlo en algun campo de la clase
+    - **Summary** tiene también un **outputTarget: OutputTarget** que responde a la interfaz OutputTarget
+      - **OutputTarget** tiene un método **print(report: string): void**
+    - Finalmente, **Summary** tiene un método **buildAndPrintReport(MatchData[])**
+  - La interfaz **Analyzer** satisface las clases **AverageGoalsAnalysys y WinsAnalysis**
+  - La interfaz **OutputTarget** satisface las clases **ConsoleReport y HTMLReport**
+    - **Ambas contienen el  metodo run** que devuelve void, la clase Console imprimirá en consola y HTMLReport gaurdará el resultado en un HTML
+  - Entonces, con la clase **Summary**, efectuaré un tipo de analisis, generaré algún tipo de output,con el método buildAndPrintreport que delega las tareas de analizar y generar el reporte en los objetos analyzer y outputTarget
+------
+
+## A Composition-Based Approach
+
+- Hasta ahora el tipo MatchData está dentro de MatchReader.ts
+- Lo muevo a un archivo separado en src/types/MatchData.ts
+
+~~~js
+import MatchResult from "../MatchResult"
+
+type MatchData = [Date, string, string, number, number, MatchResult, string]
+~~~
+
+- Empecemos con la creación de clases. Summary
+- Defino las dos interfaces (podría hacerlo en una carpeta/archivo separado)
+
+~~~js
+import { MatchData } from "../types/MatchData"
+
+export interface Analyzer{
+    run(matches: MatchData[]): string
+}
+
+
+export interface OutputTarget{
+    print(report:string): void
+}
+~~~
+
+- Ahora, en el constructor de la clase Summary debo pasarle una instancia de la clase Analyzer y otra de la clase OutputTarget
+  - Es decir, clases que satisfacen estas interfaces lo que nos ayuda a hacer código reutilizable y escalable
+- Utilizo el atajo para declararlas solo en el constructor usando la palabra reservada public
+
+~~~js
+import { Analyzer } from "./interfaces/Analyzer"
+import { OutputTarget } from "./interfaces/OutputTarget"
+
+
+export class Summary{
+    constructor(public analyzer: Analyzer, public outputTarget:OutputTarget){
+        
+    }
+}
+~~~
+
+## Implementing an Analyzer class
+
+- Creo la carpeta analyzers y dentro la clase WinsAnalysis
+- Debe satisfacer la interfaz Analyzer con el método run
+- Copio y pego el bucle for del index.ts ( paste aquí del código sin retocar)
+
+~~~js
+let manUnitedWins= 0 //contador para que incremente en 1 cada vez que gana Manchester United
+
+
+
+for(let match of reader.matches){ //cambio reader.data por reader.matches
+    if(match[1] === "Man United" && match[5]===MatchResult.HomeWin){
+        manUnitedWins++
+    }else if(match[2]=== 'Man United' && match[5]===MatchResult.AwayWin){
+        manUnitedWins ++
+    }
+}
+~~~
+
+- WinsAnalysis.ts
+
+~~~js
+import { MatchData } from "../types/MatchData";
+import { Analyzer } from "../interfaces/Analyzer";
+import MatchResult from "../MatchResult";
+
+export class WinsAnalysis implements Analyzer {
+                        //add teamName in the constructor
+    constructor(public teamName: string){} 
+
+            //import MatchData type
+    run(matches: MatchData[]): string{
+        let wins = 0 
+    for(let match of matches){                       //import enum MatchResult   
+        if(match[1] === this.teamName && match[5]===MatchResult.HomeWin){
+        wins++
+        }else if(match[2]=== this.teamName && match[5]===MatchResult.AwayWin){
+        wins++
+         }
+       }
+       return `Team ${this.teamName} wons ${wins} games `
+    }
+
+}
+~~~
+
+- La interfaz no restringe el que yo pueda añadir más métodos, pero si me exige que haya al menos los que marca la interfaz
+----
+
+## Building the reporter
+
+- Ahora voy a crear la clase ConsoleReport que satisface la interfaz OutputTarget
+- Solo debo mandarle el resultado de mi analisis y generar una impresión en consola
+
+~~~js
+import { OutputTarget } from "../interfaces/OutputTarget";
+
+
+export class ConsoleReport implements OutputTarget{
+
+    //no tengo porqué usar la misma palabra report como marca la interfaz
+    print(report: string):void{
+        console.log(report)
+    }
+}
+~~~
+
+- En la clase Summary, llamo al método buildAndPrintReport que introduce la MatchData dentro del Analyzer (en este caso WinsAnalisis, necesita MatchData para el método run) que devuelve un string que imprime el OutputTarget (en este caso ConsoleReport) 
+- Vamos entonces a crear el método buildAndPrintReport de la clase Summary
+
+~~~js
+import { Analyzer } from "./interfaces/Analyzer"
+import { OutputTarget } from "./interfaces/OutputTarget"
+import { MatchData } from "./types/MatchData"
+
+
+export class Summary{
+    constructor(public analyzer: Analyzer, public outputTarget:OutputTarget){
+        
+    }
+
+    buildAndPrintReport(matches: MatchData[]): void{
+        const output = this.analyzer.run(matches)
+        this.outputTarget.print(output)
+    }
+}
+~~~
+-----
+
+## Putting it all together
+
+- Vamos al index.ts
+
+~~~js
+import { CsvFileReader } from "./CsvFileBACKUP"
+import { MatchReader } from "./MatchReader"
+import { Summary } from "./Summary"
+import { WinsAnalysis } from "./analyzers/WinsAnalisis"
+import { ConsoleReport } from "./reporters/Consolereport"
+
+
+
+const csvFile = new CsvFileReader('./data/football.csv')
+const matchReader = new MatchReader(csvFile)
+matchReader.load()
+
+const ManUnitedAnalyzer = new WinsAnalysis('Man United')
+const ManUnitedReport = new ConsoleReport()
+
+const ManUnitedSummary = new Summary(ManUnitedAnalyzer, ManUnitedReport)
+
+ManUnitedSummary.buildAndPrintReport(matchReader.matches)
+~~~
+
+- Podría hacer la instancia de Summary en una linea
+
+~~~js
+const manUnitedSummary = new Summary(new WinsAnalysis('Man United'), new ConsoleReport())
+~~~
+--------
+
+## Generating HTML Reports
+
+- Creo en la carpeta reporters HtmlReport.ts
+
+~~~js
+import fs from 'fs'
+import { OutputTarget } from "../interfaces/OutputTarget";
+
+
+export class HtmlReport implements OutputTarget{
+
+    print(report: string): void {
+        const html = `
+            <div>
+                <h1>Analysis</h1>
+                <div>${report}</div>
+            </div>
+        `
+
+        fs.writeFileSync('report.html', html)
+    }
+}
+~~~
+
+- Lo importo en el index.ts y meto la instancia en Summary
+
+~~~js
+
+import { CsvFileReader } from "./CsvFileBACKUP"
+import { MatchReader } from "./MatchReader"
+import { Summary } from "./Summary"
+import { WinsAnalysis } from "./analyzers/WinsAnalisis"
+import { ConsoleReport } from "./reporters/Consolereport"
+import { HtmlReport } from "./reporters/HtmlReport"
+
+
+const csvFile = new CsvFileReader('./data/football.csv')
+const matchReader = new MatchReader(csvFile)
+matchReader.load()
+
+const ManUnitedAnalyzer = new WinsAnalysis('Man United')
+const ManUnitedReport = new HtmlReport()
+
+const ManUnitedSummary = new Summary(ManUnitedAnalyzer, ManUnitedReport)
+
+ManUnitedSummary.buildAndPrintReport(matchReader.matches)
+~~~
+
+- Esto me ha generado en la raíz un html llamado report.html con esto
+
+~~~html
+
+<div>
+    <h1>Analysis</h1>
+    <div>Team Man United wons 18 games </div>
+</div>
+~~~
+
+- De esta manera tengo un cñodigo reusable y escalable sin dramas
+------
+
+## One Last Thing!
+
+- Puedo crear un atajo para que la declaración de la instancia de Summary no sea tan verbosa
+- Puede ser que siempre quiera el mismo equipo y el mismo reporte
+- Puedo crear un método estático. 
+- Son métodos que pueden ser llamados sin crear una instancia de la clase (Summary.metodoEstatico())
+
+~~~js
+import { Analyzer } from "./interfaces/Analyzer"
+import { OutputTarget } from "./interfaces/OutputTarget"
+import { MatchData } from "./types/MatchData"
+import { WinsAnalysis } from "./analyzers/WinsAnalisis"
+import { HtmlReport } from "./reporters/HtmlReport"
+
+
+export class Summary{
+
+    static winsAnalysisWithHTMLReport(teamName: string): Summary{
+            return new Summary(new WinsAnalysis(teamName), new HtmlReport())
+    }
+    
+    constructor(public analyzer: Analyzer, public outputTarget:OutputTarget){
+        
+    }
+
+    buildAndPrintReport(matches: MatchData[]): void{
+        const output = this.analyzer.run(matches)
+        this.outputTarget.print(output)
+    }
+}
+~~~
+
+- De esta manera puedo llamar a Summary.winsAnalysisWithHTMLReport('Man United')
+- Puedo hacer lo mismo con MatchReader y crear un método estático
+
+~~~js
+import { dateStringTodate } from './utils'
+import MatchResult from './MatchResult'
+import { MatchData } from './types/MatchData'
+import { CsvFileReader } from './CsvFileBACKUP'
+
+interface DataReader {
+    read(): void,
+    data: string[][]
+}
+
+export class MatchReader{
+
+    static fromCsv(filename: string): MatchReader{
+        return new MatchReader(new CsvFileReader(filename))
+    }
+    
+    matches: MatchData[]= []
+
+    
+
+    constructor (public reader: DataReader){
+        
+    }
+
+    load():void{
+        this.reader.read()
+        this.matches = this.reader.data.map((row: string[]): MatchData=>{
+        return [
+            dateStringTodate(row[0]),
+            row[1],
+            row[2],
+            parseInt(row[3]),
+            parseInt(row[4]),
+            row[5] as MatchResult, //le digo a Typescript que se llo que ocurre aqui, CRÉEME
+            row[6]
+        ]
+      })
+    }
+}
+~~~
+
+- Ahora puedo hacerlo una nueva instancia con menos código
+
+~~~js
+const matchReader = MatchReader.fromCsv('../football.csv')
+~~~
+------
+
+## Resumen
+
+- Creamos un enum para MatchResult
+  - El gol de esto es comunicar que estos valores están relacionados
+- Creamos el tipo MatchData con una tupla para describir una fila del archivo csv
+- En el approach de herencia creamos la clase abstracta csvFileReader con un genérico para usar genéricos dentro de la clase
+    - Siempre que definamos una clase que herede de csvFileReader hay que pasarle un tipo de dato en lugar del genérico
+    - En este caso le paso el tipo MatchData para el campo data de la clase MatchReader
+- En el segundo approach usamos composición
+- En el constructor de MatchReader indico que le paso un objeto de tipo DataReader
+    - El único propósito de MatchReader es transformar la data que venga en un resultadod e tipo MatchData
+- El otro caso claro de composición es el efectuado con Summary
+
+  
+
+
+
+  
+
+
