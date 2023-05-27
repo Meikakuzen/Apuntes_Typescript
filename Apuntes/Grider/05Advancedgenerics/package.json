@@ -1,0 +1,16 @@
+{
+  "name": "05advancedgenerics",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon-ts index.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "nodemon": "^2.0.22",
+    "nodemon-ts": "^1.0.1",
+    "typescript": "^5.0.4"
+  }
+}

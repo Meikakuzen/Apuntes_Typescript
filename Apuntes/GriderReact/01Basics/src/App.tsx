@@ -1,8 +1,9 @@
+import FindUser from "./FindUser"
 
 
 const App = () => {
   return (
-    <div>App</div>
+    <FindUser />
   )
 }
 
