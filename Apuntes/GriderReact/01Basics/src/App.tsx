@@ -1,9 +1,8 @@
-import FindUser from "./FindUser"
-
+import UserSearch from './refs/UserSearch'
 
 const App = () => {
   return (
-    <FindUser />
+    <UserSearch />
   )
 }
 
