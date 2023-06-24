@@ -129,7 +129,7 @@ const foundValues = filterValues<string>("Migue", ["Migue", "Perico", "Clara"])
     id: number;
     createdAt: Date;
     updatedAt: Date;
-    data:<T>
+    data: T
  }
 
 type User =DBRecord<{name: string; username: string}>
